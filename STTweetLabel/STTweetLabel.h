@@ -16,6 +16,8 @@ typedef NS_ENUM(NSInteger, STTweetHotWord) {
 
 @interface STTweetLabel : UILabel
 
+@property (nonatomic, copy) NSAttributedString *userAttributedText;
+
 @property (nonatomic, strong) NSArray *validProtocols;
 @property (nonatomic, assign) BOOL leftToRight;
 @property (nonatomic, assign) BOOL textSelectable;

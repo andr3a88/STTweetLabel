@@ -121,6 +121,8 @@
     [self setUserInteractionEnabled:YES];
     [self setNumberOfLines:0];
     
+    self.userAttributedText = [[NSAttributedString alloc] initWithString:@""];
+    
     _leftToRight = YES;
     _textSelectable = YES;
     _selectionColor = [UIColor colorWithWhite:0.9 alpha:1.0];
@@ -195,7 +197,7 @@
 
         // Register the hot word and its range
         if (length > 1)
-            [_rangesOfHotWords addObject:@{@"hotWord": @(hotWord), @"range": [NSValue valueWithRange:NSMakeRange(range.location, length)]}];
+            [_rangesOfHotWords addObject:@{@"hotWord": @(hotWord), @"range": [NSValue valueWithRange:NSMakeRange(range.location + self.userAttributedText.length, length)]}];
     }
 
     [self determineLinks];
@@ -216,7 +218,7 @@
         if ([_validProtocols containsObject:protocol.lowercaseString]) {
             [_rangesOfHotWords addObject:@{ @"hotWord"  : @(STTweetLink),
                                             @"protocol" : protocol,
-                                            @"range"    : [NSValue valueWithRange:result.range]
+                                            @"range"    : [NSValue valueWithRange: NSMakeRange(result.range.location + self.userAttributedText.length, result.range.length)]
             }];
         }
     }];
@@ -226,8 +228,15 @@
     [_textStorage beginEditing];
 
     NSAttributedString *attributedString = _cleanAttributedText ?: [[NSMutableAttributedString alloc] initWithString:_cleanText];
-    [_textStorage setAttributedString:attributedString];
-    [_textStorage setAttributes:_attributesText range:NSMakeRange(0, attributedString.length)];
+    
+    
+    //MODIFIED
+    // Add "Tizio posted on " to the text to display on the label
+    NSMutableAttributedString *attributedStringWithUsername = [self.userAttributedText mutableCopy];
+    [attributedStringWithUsername appendAttributedString:attributedString];
+    
+    [_textStorage setAttributedString:attributedStringWithUsername];
+    [_textStorage setAttributes:_attributesText range:NSMakeRange(self.userAttributedText.length, attributedString.length)];
 
     for (NSDictionary *dictionary in _rangesOfHotWords)  {
         NSRange range = [dictionary[@"range"] rangeValue];
@@ -474,7 +483,9 @@
     if(touchedHotword != nil && _detectionBlock != NULL) {
         NSRange range = [[touchedHotword objectForKey:@"range"] rangeValue];
         
-        _detectionBlock((STTweetHotWord)[[touchedHotword objectForKey:@"hotWord"] intValue], [_cleanText substringWithRange:range], [touchedHotword objectForKey:@"protocol"], range);
+        NSString *text = self.userAttributedText.string;
+        text = [text stringByAppendingString:_cleanText];
+        _detectionBlock((STTweetHotWord)[[touchedHotword objectForKey:@"hotWord"] intValue], [text substringWithRange:range], [touchedHotword objectForKey:@"protocol"], range);
     } else {
         [super touchesEnded:touches withEvent:event];
     }
